@@ -5,15 +5,16 @@ README.md
     ├── config.json
     └── connection.js
 [controllers]
-[db]
-    └── schema.sql
 [models]
-    └── Blog.js
+    ├── Blog.js
+    ├── User.js
+    └── index.js
 [node_modules]
 package.json
 [public]
     ├── [css]
     └── [js]
+        └── login.js
 [routes]
     ├── apiRoutes.js
     └── htmlRoutes.js
@@ -22,8 +23,9 @@ server.js
     ├── blog.handlebars
     ├── dashboard.handlebars
     ├── index.handlebars
-    └── [layouts]
+    ├── [layouts]
         └── main.handlebars
+    └── login.handlebars
 
 --- File Contents ---
 
@@ -38,21 +40,21 @@ const Sequelize = require('sequelize');
 
 const sequelize = new Sequelize(
     process.env.DB_NAME,
-    process.env.DB_USERNAME,
+    process.env.DB_USER,
     process.env.DB_PASSWORD,
     {
-        host: process.env.DB_HOST,
+        host: 'localhost',
         dialect: 'mysql'
     }
 );
 module.exports = sequelize;
 
---- File: db/schema.sql ---
-
-
 --- File: models/Blog.js ---
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/connection');
+
+
+
 
 class Blog extends Model {}
 
@@ -63,6 +65,13 @@ Blog.init(
             allowNull: false,
             primaryKey: true,
             autoIncrement: true,
+        },
+        userId: {
+            type:DataTypes.INTEGER,
+            references: {
+                model: 'user',
+                key: 'id',
+            },
         },
         title: {
             type: DataTypes.STRING,
@@ -86,7 +95,84 @@ Blog.init(
     }
 );
 
+
+
 module.exports = Blog;
+
+
+
+--- File: models/User.js ---
+const { Model, DataTypes } = require('sequelize');
+const sequelize = require('../config/connection');
+const bcrypt = require('bcrypt');
+
+
+class User extends Model {
+    checkPassword(loginPw) {
+        return bcrypt.compareSync(loginPw, this.password);
+    }
+}
+
+
+
+User.init(
+    {
+        id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        username: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        password: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            validate: {
+                len: [8],
+            },
+        },
+    },
+    {
+        hooks: {
+            async beforeCreate(newUser) {
+                newUser.password = await bcrypt.hash(newUser.password, 10);
+                return newUser;
+            },
+            async beforeUpdate(updatedUser) {
+                updatedUser.password = bcrypt.hash(updatedUser.password, 10)
+                return updatedUser;
+            },
+        },
+        sequelize,
+        freezeTableName: true,
+        underscored: true,
+        modelName: 'user',
+    }
+);
+
+
+
+
+
+
+module.exports = User;
+
+
+
+--- File: models/index.js ---
+const sequelize = require('../config/connection');
+
+const User = require('./User');
+const Blog = require('./Blog');
+
+// Define associations
+User.hasMany(Blog, { foreignKey: 'userId' });
+Blog.belongsTo(User, { foreignKey: 'userId' });
+
+module.exports = { User, Blog };
 
 
 --- File: package.json ---
@@ -94,7 +180,7 @@ module.exports = Blog;
   "name": "basicblog",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -117,44 +203,173 @@ module.exports = Blog;
     "express-handlebars": "^4.0.6",
     "express-session": "^1.17.3",
     "mysql2": "^3.6.2",
+    "nodemon": "^3.0.1",
     "sequelize": "^6.33.0"
   }
 }
 
 
---- File: routes/apiRoutes.js ---
+--- File: public/js/login.js ---
+document.addEventListener("DOMContentLoaded", function() {
+    const loginForm = document.getElementById("login-form");
+  
+    loginForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+  
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+  
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: username, password: password })
+      });
+  
+      const data = await response.json();
+  
+      if (response.status === 200) {
+        // Handle successful login
+        // For example, you could redirect to the dashboard or update the UI
+        window.location.href = "/dashboard";
+      } else {
+        // Handle error
+        // You could display an error message to the user
+        alert("Incorrect username or password");
+      }
+    });
+  });
+  
 
+--- File: routes/apiRoutes.js ---
+const express = require('express');
+const router = express.Router();
+const User = require('../models/User');
+
+
+//Signup route
+router.post('/signup', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const newUser = await User.create({ username, password});
+        res.status(201).json(newUser);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+// Login route
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ where: { username } });
+        if (!user) {
+            res.status(400).json({ message: 'Incorrect username or password' });
+        } else if (user.checkPassword(password)) {
+            req.session.save(() => {
+                req.session.userId = user.id;
+                req.session.username = user.username;
+                req.session.loggedIn = true;
+                
+                res.json({ user: user, message: 'You are now logged in!' });
+            });
+        } else {
+            res.status(400).json({ message: 'Incorrect username or password' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+// Logout route
+router.post('/logout', (req, res) => {
+    if (req.session.logged_in) {
+      req.session.destroy(() => {
+        res.status(204).end();
+      });
+    } else {
+      res.status(404).end();
+    }
+  });
+  
+
+// Create new post
+router.post('/new-post', async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        // Include the userId from the session in the new post
+        const newPost = await Blog.create({
+            title,
+            content,
+            userId: req.session.userId // Associate post with logged-in user
+        });
+        res.status(201).json(newPost);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+// Update existing post
+router.put('/update-post/:id', async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        const updatedPost = await Blog.update({ title, content }, {
+            where: {
+                id: req.params.id
+            }
+        });
+        res.status(200).json(updatedPost);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+// Delete post
+router.delete('/delete-post/:id', async (req, res) => {
+    try {
+        await Blog.destroy({
+            where: {
+                id: req.params.id
+            }
+        });
+        res.status(200).json({ message: 'Post deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+});
+
+module.exports = router;
 
 --- File: routes/htmlRoutes.js ---
-
-
---- File: server.js ---
-require('dotenv').config();
 const express = require('express');
-const app = express();
-const exphbs = require('express-handlebars');
-const PORT = process.env.PORT || 3001;
+const router = express.Router();
+const Blog = require('../models/Blog');
 
-// Import the Blog Model
-const Blog = require('./models/Blog');
+// Auth Middleware to check if user is logged in
+function withAuth(req, res, next) {
+    if (!req.session.userId) {
+      res.redirect('/login');
+    } else {
+      next();
+    }
+  };
 
-// Handlebars
-app.engine('handlebars', exphbs());
-app.set('view engine', 'handlebars');
+router.get('/login', (req, res) => {
+    res.render('login')
+}); 
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Static assets
-app.use(express.static('public'));
-
-// Placeholder route for Homepage
-app.get('/', async (req, res) => {
+// Blog homepage display Route
+router.get('/', async (req, res) => {
     try {
         const blogData = await Blog.findAll();
-        const blogs = blogData.map((blog) => blog.get({ plain: true }));
-
+        const blogs = blogData.map((blog) => blog.get({plain: true}));
         res.render('index', {blogs});
     } catch (err) {
         console.log(err);
@@ -162,34 +377,137 @@ app.get('/', async (req, res) => {
     }
 });
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`App listening on port ${PORT}`)
-})
+router.get('/dashboard', withAuth, async (req, res) => {
+  console.log('user ID from session: ', req.session.userId);
+
+  try {
+      // Fetch user's posts from the database
+      const userPostsData = await Blog.findAll({ where: { userId: req.session.userId } });
+      const userPosts = userPostsData.map((post) => post.get({ plain: true }));
+      console.log(userPosts)
+      // Render the dashboard view and pass the posts data
+      res.render('dashboard', { userPosts });
+  } catch (err) {
+      console.log(err);
+      res.status(500).json(err);
+  }
+});
+
+
+  module.exports = router;
+  
+
+--- File: server.js ---
+require('dotenv').config();
+
+const express = require('express');
+const app = express();
+const exphbs = require('express-handlebars');
+const PORT = process.env.PORT || 3001;
+const sequelize = require('./config/connection');
+const session = require('express-session');
+const sequelizeStore = require('connect-session-sequelize')(session.Store); 
+
+const { User, Blog } = require('./models');
+
+
+// Auth
+app.use(session({
+    secret: 'super secret', 
+    resave: false,
+    saveUninitialized: true,
+    store: new sequelizeStore({
+      db: sequelize
+    }),
+    cookie: {}
+  }));  
+
+
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
+// Routes
+const htmlRoutes = require('./routes/htmlRoutes');
+const apiRoutes = require('./routes/apiRoutes');
+app.use('/', htmlRoutes);
+app.use('/', apiRoutes);
+
+
+
+// Handlebars
+app.engine('handlebars', exphbs());
+app.set('view engine', 'handlebars');
+
+// Static assets
+app.use(express.static('public'));
+
+// Start the server.
+sequelize.sync({ force: true }).then(() => {
+    app.listen(PORT, () => {
+        console.log(`App listening on port ${PORT}`);
+    });
+});
 
 --- File: views/blog.handlebars ---
 
 
 --- File: views/dashboard.handlebars ---
+<header>
+    <nav>
+        <a href="/">Homepage</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/login">Login</a>
+    </nav>
+</header>
 
+<body>
+    <h1>Dashboard</h1>
+    <!-- Form for New Post -->
+<form id="new-post-form" action="/new-post" method="POST">
+    <input type="text" id="new-title" name="title" placeholder="Title" required>
+    <textarea id="new-content" name="content" placeholder="Content" required></textarea>
+    <button type="submit">Create Post</button>
+</form>
+
+<!-- Display User's Posts -->
+<div id="user-posts">
+    {{#each userPosts}}
+        <article>
+            <h3>{{this.title}}</h3>
+            <p>{{this.content}}</p>
+            <button class="edit-button" data-id="{{this.id}}">Edit</button>
+            <button class="delete-button" data-id="{{this.id}}">Delete</button>
+        </article>
+    {{/each}}
+</div>
+
+</body>
 
 --- File: views/index.handlebars ---
 
+<header>
+    <nav>
+        <a href="/">Homepage</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/login">Login</a>
+    </nav>
+</header>
 <body>
-    <header>
-        <nav>
-            <a href="/">Homepage</a>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/login"></a>
-        </nav>
-    </header>
     <main>
-        <h1>Welcome to Basic Blog</h1>
+        <h1>Welcome to basicBlog</h1>
         <div id="blog-posts">
-
+            <h2>Blog Posts</h2>
+            {{#each blogs}}
+                <article>
+                    <h3>{{this.title}}</h3>
+                    <p>{{this.content}}</p>
+                </article>
+            {{/each}}
         </div>
-    </main>
-    
+    </main>  
 </body>
 
 
@@ -201,7 +519,45 @@ app.listen(PORT, () => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Basic Blog</title>
 </head>
+<header>
+    {{{header}}}
+</header>
 <body>
     {{{body}}}
 </body>
 </html>
+
+--- File: views/login.handlebars ---
+<header>
+    <nav>
+        <a href="/">Homepage</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/signup">Signup</a>
+    </nav>
+</header>
+<body>
+    <!-- Sign-Up Form -->
+<form id="sign-up-form" action="/signup" method="post">
+    <h2>Sign-Up</h2>
+    <label for="user">Username:</label>
+    <input type="text" id="username" name="username" required>
+
+    <label for="new-password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit" id="sign-up-button">Sign-Up</button>
+</form>
+
+<!-- Login Form -->
+<form id="sign-in-form" action="/login" method="post">
+    <h2>Sign-In</h2>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit" id="sign-in-button">Sign-In</button>
+</form>
+
+</body>

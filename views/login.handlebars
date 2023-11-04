@@ -1,0 +1,33 @@
+<header>
+    <nav>
+        <a href="/">Homepage</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/signup">Signup</a>
+    </nav>
+</header>
+<body>
+    <!-- Sign-Up Form -->
+<form id="sign-up-form" action="/signup" method="POST">
+    <h2>Sign-Up</h2>
+    <label for="user">Username:</label>
+    <input type="text" id="username" name="username" required>
+
+    <label for="new-password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit" id="sign-up-button">Sign-Up</button>
+</form>
+
+<!-- Login Form -->
+<form id="sign-in-form" action="/login" method="post">
+    <h2>Sign-In</h2>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit" id="sign-in-button">Sign-In</button>
+</form>
+
+</body>

@@ -5,6 +5,24 @@ const app = express();
 const exphbs = require('express-handlebars');
 const PORT = process.env.PORT || 3001;
 const sequelize = require('./config/connection');
+const session = require('express-session');
+const sequelizeStore = require('connect-session-sequelize')(session.Store); 
+
+const { User, Blog } = require('./models');
+
+
+// Auth
+app.use(session({
+    secret: 'super secret', 
+    resave: false,
+    saveUninitialized: true,
+    store: new sequelizeStore({
+      db: sequelize
+    }),
+    cookie: {}
+  }));  
+
+
 
 // Middleware
 app.use(express.json());
@@ -17,10 +35,7 @@ const apiRoutes = require('./routes/apiRoutes');
 app.use('/', htmlRoutes);
 app.use('/', apiRoutes);
 
-// Import the Blog Model
-const Blog = require('./models/Blog');
-// Import the User Model
-const User = require('./models/User');
+
 
 // Handlebars
 app.engine('handlebars', exphbs());
@@ -30,7 +45,7 @@ app.set('view engine', 'handlebars');
 app.use(express.static('public'));
 
 // Start the server.
-sequelize.sync({ force: true }).then(() => {
+sequelize.sync({ force: false }).then(() => {
     app.listen(PORT, () => {
         console.log(`App listening on port ${PORT}`);
     });
