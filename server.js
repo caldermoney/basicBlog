@@ -1,28 +1,27 @@
 require('dotenv').config();
 
 const express = require('express');
-const app = express();
 const exphbs = require('express-handlebars');
 const PORT = process.env.PORT || 3001;
 const sequelize = require('./config/connection');
 const session = require('express-session');
 const sequelizeStore = require('connect-session-sequelize')(session.Store); 
+const app = express();
+
 
 const { User, Blog } = require('./models');
 
 
 // Auth
-app.use(session({
+app.use(
+  session({
     secret: 'super secret', 
     resave: false,
     saveUninitialized: true,
     store: new sequelizeStore({
       db: sequelize
     }),
-    cookie: {}
   }));  
-
-
 
 // Middleware
 app.use(express.json());

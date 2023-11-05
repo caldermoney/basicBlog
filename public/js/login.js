@@ -19,11 +19,9 @@ document.addEventListener("DOMContentLoaded", function() {
   
       if (response.status === 200) {
         // Handle successful login
-        // For example, you could redirect to the dashboard or update the UI
         window.location.href = "/dashboard";
       } else {
         // Handle error
-        // You could display an error message to the user
         alert("Incorrect username or password");
       }
     });

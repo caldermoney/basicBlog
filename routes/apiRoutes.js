@@ -4,17 +4,42 @@ const User = require('../models/User');
 const Blog = require('../models/Blog');
 
 
-//Signup route
+// Signup route
 router.post('/signup', async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const newUser = await User.create({ username, password});
-        res.status(201).json(newUser);
+      const { username, password } = req.body;
+  
+      // Validate the username and password
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+      }
+  
+      // Check if the username already exists
+  
+      
+  const existingUser = await User.findOne({ where: { username } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+  
+      // Create the new user
+  
+      
+  const newUser = await User.create({ username, password });
+  
+      // Set the session cookie
+      req.session.userId = newUser.id;
+      req.session.username = newUser.username;
+      req.session.loggedIn = true;
+  
+      // Respond with the new user details
+      res.status(201).json(newUser);
     } catch (err) {
-        console.error(err);
-        res.status(500).json(err);
+      console.error(err);
+      res.status(500).json({ message: 'Error signing up' });
     }
-});
+  });
+  
 
 // Login route
 router.post('/login', async (req, res) => {
@@ -28,8 +53,10 @@ router.post('/login', async (req, res) => {
                 req.session.userId = user.id;
                 req.session.username = user.username;
                 req.session.loggedIn = true;
-                
-                res.json({ user: user, message: 'You are now logged in!' });
+
+                res.json({
+ 
+user: user, message: 'You are now logged in!' });
             });
         } else {
             res.status(400).json({ message: 'Incorrect username or password' });
@@ -42,12 +69,12 @@ router.post('/login', async (req, res) => {
 
 // Logout route
 router.post('/logout', (req, res) => {
-    if (req.session.logged_in) {
+    if (req.session.loggedIn) {
       req.session.destroy(() => {
-        res.status(204).end();
+        res.redirect('/');
       });
     } else {
-      res.status(404).end();
+      res.status(404).send();
     }
   });
   

@@ -6,9 +6,23 @@
     <title>Basic Blog</title>
 </head>
 <header>
-    {{{header}}}
+    <nav>
+    <a href="/">Homepage</a>
+    <a href="/dashboard">Dashboard</a>
+    {{#if loggedIn}}
+        <!-- User is logged in, do not show Signup or Login -->
+        <button id="logoutBtn">Logout</button>
+    {{else}}
+        <!-- User is not logged in, show Signup and Login -->
+        <a href="/signup">Signup</a>
+        <a href="/login">Login</a>
+    {{/if}}
+</nav>
 </header>
 <body>
     {{{body}}}
 </body>
 </html>
+
+<script src="/js/signup.js" defer></script>
+<script src="/js/logout.js" defer></script>
