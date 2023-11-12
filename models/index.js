@@ -1,10 +1,22 @@
-const sequelize = require('../config/connection');
-
 const User = require('./User');
-const Blog = require('./Blog');
+const Post = require('./Post');
+const Comment = require('./Comment');
 
-// Define associations
-User.hasMany(Blog, { foreignKey: 'userId' });
-Blog.belongsTo(User, { foreignKey: 'userId' });
+// Model associations:
+Post.belongsTo(User, {
+    foreignKey: 'userId',
+    onDelete: 'CASCADE'
+});
 
-module.exports = { User, Blog };
+Post.hasMany(Comment, {
+    foreignKey: 'postId',
+    onDelete: 'CASCADE'
+});
+
+Comment.belongsTo(User, {
+    foreignKey: 'userId',
+    onDelete: 'CASCADE'
+});
+
+module.exports = { User, Post, Comment };
+

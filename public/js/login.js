@@ -1,29 +1,24 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const loginForm = document.getElementById("login-form");
+const loginFormHandler = async (event) => {
+    event.preventDefault();
   
-    loginForm.addEventListener("submit", async function(event) {
-      event.preventDefault();
+    const username = document.querySelector('#username-login').value.trim();
+    const password = document.querySelector('#password-login').value.trim();
   
-      const username = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
-  
-      const response = await fetch("/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ username: username, password: password })
+    if (username && password) {
+      const response = await fetch('/api/user/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+        headers: { 'Content-Type': 'application/json' },
       });
   
-      const data = await response.json();
-  
-      if (response.status === 200) {
-        // Handle successful login
-        window.location.href = "/dashboard";
+      if (response.ok) {
+        document.location.replace('/dashboard'); // go to dash after logging in
       } else {
-        // Handle error
-        alert("Incorrect username or password");
+        alert('Failed to log in');
       }
-    });
-  });
+    }
+};
   
+document
+  .querySelector('#login-form')
+  .addEventListener('submit', loginFormHandler);

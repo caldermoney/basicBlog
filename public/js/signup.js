@@ -1,35 +1,23 @@
-document.addEventListener("DOMContentLoaded", function() {
-    console.log('DOMContentLoaded event fired');  // Add this line to check if the event is firing
-    const signupForm = document.getElementById("signup-form");
+const signupFormHandler = async (event) => {
+    event.preventDefault();
   
-    signupForm.addEventListener('submit', async function(event) {
-      event.preventDefault();
-    
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-    
-      try {
-        const response = await fetch('/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password })
-        });
-    
-        const data = await response.json();
-    
-        if (response.status === 200) {
-          // Handle successful signup
-          window.location.href = '/login';
-        } else {
-          // Handle error
-          alert('Error signing up');
-        }
-      } catch (err) {
-        console.error('Error during signup:', err);
-        alert('Error signing up');
+    const username = document.querySelector('#username-signup').value.trim();
+    const password = document.querySelector('#password-signup').value.trim();
+  
+      const response = await fetch('/api/user', {
+        method: 'POST',
+        body: JSON.stringify({ username: username, password: password }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+  
+      if (response.ok) {
+        document.location.replace('/dashboard'); // go to dash after signing up
+      } else {
+        alert('Failed to sign up');
       }
-    });
-});
+  };
   
+  document
+    .querySelector('#signup-form')
+    .addEventListener('submit', signupFormHandler);
+

@@ -1,51 +1,56 @@
-require('dotenv').config();
-
 const express = require('express');
 const exphbs = require('express-handlebars');
-const PORT = process.env.PORT || 3001;
-const sequelize = require('./config/connection');
+const path = require('path');
+const helpers = require('./utils/helpers');
+const routes = require('./controllers/');
 const session = require('express-session');
-const sequelizeStore = require('connect-session-sequelize')(session.Store); 
+
+const sequelize = require('./config/connection');
+const sequelizeStore = require('connect-session-sequelize')(session.Store);
+
+const User = require('./models/User');
+const Post = require('./models/Post');
+const Comment = require('./models/Comment');
+
 const app = express();
+const port = process.env.PORT || 3001;
 
-
-const { User, Blog } = require('./models');
-
-
-// Auth
-app.use(
-  session({
-    secret: 'super secret', 
+const sess = {
+    secret: 'Super_secret_secret',
+    cookie: {
+        maxAge: 3600000,
+        httpOnly: true,
+        secure: false,
+        sameSite: 'strict',
+    },
     resave: false,
     saveUninitialized: true,
     store: new sequelizeStore({
-      db: sequelize
+        db: sequelize,
     }),
-  }));  
+};
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(session(sess));
 
+const hbs = exphbs.create({ helpers });
 
-// Routes
-const htmlRoutes = require('./routes/htmlRoutes');
-const apiRoutes = require('./routes/apiRoutes');
-app.use('/', htmlRoutes);
-app.use('/', apiRoutes);
-
-
-
-// Handlebars
-app.engine('handlebars', exphbs());
+app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 
-// Static assets
-app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Start the server.
-sequelize.sync({ force: false }).then(() => {
-    app.listen(PORT, () => {
-        console.log(`App listening on port ${PORT}`);
+app.use(routes);
+
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+  sequelize.sync({ force: false })
+    .then(() => {
+      console.log('Database synced successfully');
+    })
+    .catch((err) => {
+      console.log('Failed to sync database',err);
     });
 });
