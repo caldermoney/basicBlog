@@ -14,16 +14,9 @@
 		<nav>
 			<ul>
 				<li class='li-inline nav-item'><a href='/'>Home</a></li>
-				{{#if logged_in}}
 					<li class='li-inline nav-item'><a href='/dashboard'>Dashboard</a></li>
-					<li class='li-inline nav-item'><a
-							href='#'
-							class='btn'
-							id='logout'
-						>Logout</a></li>
-				{{else}}
+					<li class='li-inline nav-item'><a href='/logout'>Logout</a></li>
 					<li class='li-inline nav-item'><a href='/login'>Login</a></li>
-				{{/if}}
 			</ul>
 		</nav>
 
@@ -37,7 +30,7 @@
 			{{{body}}}
 		</main>
 		<footer>
-			&copy; Techno Blog 2023
+			&copy; basicBlog 2023
 		</footer>
 
 	</body>

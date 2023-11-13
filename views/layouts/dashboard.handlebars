@@ -13,18 +13,9 @@
 			<ul>
 				{{! link to homepage }}
 				<li class='li-inline nav-item'><a href='/'>Home</a></li>
-				{{#if logged_in}}
-					{{! if user is logged in, links to the dashboard & logout will show }}
 					<li class='li-inline nav-item'><a href='/dashboard'>Dashboard</a></li>
-					<li class='li-inline nav-item'><a
-							href='#'
-							class='btn'
-							id='logout'
-						>Logout</a></li>
-				{{else}}
-					{{! if user not logged in, login + login link will show }}
+					<li class='li-inline nav-item'><a href='/logout'>Logout</a></li>
 					<li class='li-inline nav-item'><a href='/login'>Login</a></li>
-				{{/if}}
 			</ul>
 		</nav>
 

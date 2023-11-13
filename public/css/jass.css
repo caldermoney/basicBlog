@@ -4,11 +4,11 @@
 
 :root {
 	/* use preset colors by: var(--attribute) */
-	--primary: #9ce8ff;
-	--secondary: #92bbaf;
+	--primary: #6cac58;
+	--secondary: black;
 	--tertiary: #2c6161;
-	--light-dark: #51147a;
-	--dark: #200830;
+	--light-dark: black;
+	--dark: black;
 }
 
 /* General reset */
@@ -16,21 +16,22 @@
 	margin: 0 auto;
 	padding: 0;
 	box-sizing: border-box;
-	border-radius: 10%;
+}
+
+h1 {
+	text-align: center;
 }
 
 /* Typography */
 body {
 	background-color: var(--primary);
-	font-family: 'Courier New', Courier, monospace;
+	font-family: 'hermetica';
 	font-size: 15px;
 	color: var(--dark);
 	line-height: 1.5;
 	display: block;
 	margin-bottom: 1em;
 }
-
-h1,
 h2,
 h3,
 h4,
@@ -103,8 +104,10 @@ header footer {
 main {
 	display: block;
 	margin-bottom: 1em;
+	margin-left: 1em;
+	margin-right: 1em;
 	box-sizing: border-box;
-	background-color: white;
+	background-color: #6cac58;
 }
 
 /* Forms */
@@ -132,6 +135,10 @@ main {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+}
+
+footer {
+	text-align: center;
 }
 
 /* Styles for tablets (landscape) */
