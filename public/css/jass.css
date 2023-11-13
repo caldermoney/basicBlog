@@ -141,6 +141,11 @@ footer {
 	text-align: center;
 }
 
+.list-item.flex-column {
+	display: flex;
+	flex-direction: column;
+}
+
 /* Styles for tablets (landscape) */
 @media (min-width: 768px) {
 	body {
